@@ -8,6 +8,8 @@
 > 🏆 **全国中学生领导力大赛 · 五星项目**（赛事最高荣誉等级）| National Student Leadership Competition · Five-Star Project (top honor)
 >
 > 🎯 项目分类：帮扶弱势群体 | Category: Supporting Vulnerable Groups
+>
+> 📛 完整获奖名称：第十七届全国中学生领导力展示会第二轮微型项目展示帮扶弱势群体分类5星项目
 
 ---
 

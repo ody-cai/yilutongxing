@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!--
+    「驿」路同行 — 项目组 favicon
+    风格：温暖橙黄 + 简化房屋轮廓 + 心形（呼应小牛 IP 心形图标）
+  -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#FFE2A8"/>
+      <stop offset="100%" stop-color="#F5A623"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 圆角方形底 -->
+  <rect x="2" y="2" width="60" height="60" rx="14" ry="14" fill="url(#bg)"/>
+
+  <!-- 屋顶（房子轮廓） -->
+  <path d="M14 30 L32 14 L50 30"
+        fill="none" stroke="#1F1500" stroke-width="3.4"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- 房子主体 -->
+  <rect x="18" y="30" width="28" height="20" rx="2"
+        fill="#FFFFFF" stroke="#1F1500" stroke-width="3"/>
+
+  <!-- 心形（呼应小牛 IP 心形图案） -->
+  <path d="M32 44
+           C 28 40, 24 38, 24 35
+           C 24 32, 27 31, 29 33
+           C 30 31.5, 31 31, 32 31
+           C 33 31, 34 31.5, 35 33
+           C 37 31, 40 32, 40 35
+           C 40 38, 36 40, 32 44 Z"
+        fill="#C5382A" stroke="#1F1500" stroke-width="1.4"/>
+</svg>

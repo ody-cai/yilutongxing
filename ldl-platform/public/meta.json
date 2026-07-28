@@ -1,0 +1,1 @@
+{"facilities":[{"key":"drink","label":"饮水"},{"key":"ac","label":"空调"},{"key":"seat","label":"座椅"},{"key":"charging","label":"充电"},{"key":"wifi","label":"Wi-Fi"},{"key":"first_aid","label":"急救包"},{"key":"toilet","label":"厕所"},{"key":"microwave","label":"微波炉"}],"statuses":[{"key":"open","label":"开放中"},{"key":"closed","label":"已关闭"},{"key":"maintenance","label":"维护中"}]}

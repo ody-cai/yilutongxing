@@ -1,0 +1,7 @@
+{
+  "usingComponents": {
+    "station-card": "/components/station-card/station-card"
+  },
+  "enablePullDownRefresh": true,
+  "navigationBarTitleText": "找驿站"
+}

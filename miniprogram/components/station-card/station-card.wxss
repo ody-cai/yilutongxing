@@ -1,0 +1,43 @@
+.station-card {
+  display: flex;
+  flex-direction: column;
+}
+.station-card .hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.station-card .name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1f2329;
+}
+.station-card .addr {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #8a8f99;
+}
+.station-card .ft {
+  margin-top: 14rpx;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+.station-card .dist {
+  font-size: 24rpx;
+  color: #07c160;
+  font-weight: 600;
+}
+.station-card .fac {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+}
+.station-card .fac-item {
+  font-size: 20rpx;
+  color: #5a6072;
+  background: #f2f3f5;
+  padding: 3rpx 12rpx;
+  border-radius: 8rpx;
+}

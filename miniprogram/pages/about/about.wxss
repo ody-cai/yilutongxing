@@ -1,0 +1,91 @@
+.page {
+  padding: 24rpx 0 60rpx;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+.hero {
+  text-align: center;
+  background: linear-gradient(135deg, #07c160, #06ad56);
+}
+.hero .title {
+  font-size: 44rpx;
+  font-weight: 800;
+  color: #fff;
+}
+.hero .subtitle {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.9);
+}
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
+  margin-top: 20rpx;
+}
+.stats .stat {
+  flex: 1;
+  min-width: 30%;
+  text-align: center;
+  background: #f7f8fa;
+  border-radius: 14rpx;
+  padding: 22rpx 0;
+}
+.stats .num {
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #07c160;
+}
+.stats .lab {
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: #8a8f99;
+}
+.intro .h {
+  font-size: 30rpx;
+  font-weight: 700;
+  margin: 16rpx 0 12rpx;
+}
+.intro .h:first-child { margin-top: 0; }
+.intro .p {
+  font-size: 26rpx;
+  color: #5a6072;
+  line-height: 1.7;
+}
+.foot {
+  text-align: center;
+  margin-top: 40rpx;
+  font-size: 22rpx;
+  color: #b2b6bf;
+}
+
+/* 官网卡片 */
+.site {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+.site-l {
+  flex: 1;
+  min-width: 0;
+}
+.site-name {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1f2329;
+}
+.site-url {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #07c160;
+  word-break: break-all;
+}
+.site-btn {
+  flex-shrink: 0;
+  background: #07c160;
+  color: #fff;
+  font-size: 26rpx;
+  padding: 14rpx 30rpx;
+  border-radius: 999rpx;
+}

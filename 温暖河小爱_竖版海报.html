@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>温暖河小爱 · 竖版视觉海报</title>
+<style>
+  :root{
+    --cream-1:#FFF7EA;
+    --cream-2:#FFE9CF;
+    --ink:#2B2118;
+    --warm:#E8822E;
+    --warm-soft:#F6A85C;
+    --blue:#2C6FD6;
+    --blue-soft:#5B93E8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    background:#E9E2D6;
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    display:flex;align-items:center;justify-content:center;
+    overflow:auto;
+  }
+  /* scaler keeps the fixed 1080x1440 stage fitting any window */
+  #scaler{transform-origin:center center;}
+  .stage{
+    position:relative;
+    width:1080px;height:1440px;
+    background:
+      radial-gradient(120% 80% at 50% 0%, var(--cream-1) 0%, var(--cream-2) 100%);
+    overflow:hidden;
+    box-shadow:0 40px 90px rgba(43,33,24,.28);
+  }
+  /* soft decorative waves at bottom */
+  .waves{position:absolute;left:0;right:0;bottom:0;height:260px;opacity:.18;}
+
+  /* top brand bar */
+  .topbar{position:absolute;top:54px;left:60px;right:60px;display:flex;align-items:center;justify-content:space-between;}
+  .emblem{width:148px;height:148px;border-radius:28px;background:#fff;
+    box-shadow:0 12px 30px rgba(44,111,214,.22);object-fit:contain;padding:10px;}
+  .eyebrow-top{font-size:34px;font-weight:700;color:var(--blue);letter-spacing:2px;}
+
+  /* hero */
+  .hero-wrap{position:absolute;top:236px;left:0;right:0;display:flex;justify-content:center;}
+  .hero{width:640px;height:640px;border-radius:48px;object-fit:cover;
+    box-shadow:0 30px 70px rgba(43,33,24,.30), 0 0 0 10px rgba(255,255,255,.55);}
+
+  /* title block */
+  .title-block{position:absolute;top:920px;left:60px;right:60px;text-align:center;}
+  .eyebrow{font-size:40px;font-weight:700;color:var(--blue);letter-spacing:6px;margin-bottom:14px;}
+  .title{font-size:128px;font-weight:800;color:var(--ink);letter-spacing:8px;line-height:1.05;}
+  .subtitle{font-size:52px;font-weight:600;color:var(--warm);letter-spacing:3px;margin-top:18px;}
+
+  .divider{position:absolute;top:1188px;left:340px;right:340px;height:4px;border-radius:4px;
+    background:linear-gradient(90deg,transparent,var(--warm-soft),transparent);}
+
+  /* family strip */
+  .family{position:absolute;top:1224px;left:0;right:0;display:flex;justify-content:center;gap:26px;}
+  .family img{width:150px;height:150px;border-radius:26px;object-fit:cover;
+    box-shadow:0 14px 30px rgba(43,33,24,.20);border:6px solid #fff;}
+  .family .cap{position:absolute;bottom:-44px;left:0;right:0;text-align:center;
+    font-size:30px;color:#8a7a66;letter-spacing:3px;}
+
+  .footer{position:absolute;bottom:46px;left:0;right:0;text-align:center;
+    font-size:34px;font-weight:700;color:var(--ink);letter-spacing:4px;}
+
+  /* floating hearts */
+  .heart{position:absolute;opacity:.85;}
+  .h1{top:250px;right:90px;width:54px;}
+  .h2{top:880px;left:96px;width:40px;}
+  .h3{bottom:300px;right:120px;width:46px;}
+
+  .toolbar{position:fixed;top:18px;right:18px;display:flex;gap:10px;z-index:50;}
+  .toolbar button{font-family:inherit;font-size:16px;font-weight:700;color:#fff;background:var(--blue);
+    border:none;border-radius:10px;padding:10px 16px;cursor:pointer;box-shadow:0 6px 16px rgba(44,111,214,.35);}
+  .toolbar button.ghost{background:#fff;color:var(--blue);}
+  @media print{.toolbar{display:none;} body{background:#fff;}}
+</style>
+</head>
+<body>
+  <div class="toolbar">
+    <button onclick="window.print()">导出 / 打印</button>
+    <button class="ghost" onclick="location.reload()">重置</button>
+  </div>
+
+  <div id="scaler">
+    <div class="stage" id="stage">
+      <!-- decorative hearts -->
+      <svg class="heart h1" viewBox="0 0 24 24" fill="#2C6FD6"><path d="M12 21s-7.5-4.9-10-9.2C.6 9 1.7 5.7 4.8 5c2-.5 3.9.5 4.9 2 .4.6.6 1 .3 1 .9-1.5 2.9-2.5 4.9-2 3.1.7 4.2 4 2.8 6.8C19.5 16.1 12 21 12 21z"/></svg>
+      <svg class="heart h2" viewBox="0 0 24 24" fill="#E8822E"><path d="M12 21s-7.5-4.9-10-9.2C.6 9 1.7 5.7 4.8 5c2-.5 3.9.5 4.9 2 .4.6.6 1 .3 1 .9-1.5 2.9-2.5 4.9-2 3.1.7 4.2 4 2.8 6.8C19.5 16.1 12 21 12 21z"/></svg>
+      <svg class="heart h3" viewBox="0 0 24 24" fill="#2C6FD6"><path d="M12 21s-7.5-4.9-10-9.2C.6 9 1.7 5.7 4.8 5c2-.5 3.9.5 4.9 2 .4.6.6 1 .3 1 .9-1.5 2.9-2.5 4.9-2 3.1.7 4.2 4 2.8 6.8C19.5 16.1 12 21 12 21z"/></svg>
+
+      <!-- top brand bar -->
+      <div class="topbar">
+        <img class="emblem" src="poster-assets/emblem.png" alt="队徽" />
+        <div class="eyebrow-top">公益形象代言</div>
+      </div>
+
+      <!-- hero mascot -->
+      <div class="hero-wrap">
+        <img class="hero" src="poster-assets/mascot-1.jpg" alt="温暖河小爱" />
+      </div>
+
+      <!-- title -->
+      <div class="title-block">
+        <div class="eyebrow">温情守护 · 公益同行</div>
+        <div class="title">温暖河小爱</div>
+        <div class="subtitle">以陪伴之名，温暖每一段归途</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- family strip -->
+      <div class="family">
+        <img src="poster-assets/mascot-2.jpg" alt="表情 2" />
+        <img src="poster-assets/mascot-3.jpg" alt="表情 3" />
+        <img src="poster-assets/mascot-4.jpg" alt="表情 4" />
+        <img src="poster-assets/mascot-5.jpg" alt="表情 5" />
+        <div class="cap">— 河小爱表情家族 —</div>
+      </div>
+
+      <div class="footer">温暖河小爱 · 让爱有家</div>
+
+      <!-- bottom waves -->
+      <svg class="waves" viewBox="0 0 1080 260" preserveAspectRatio="none" fill="#2C6FD6">
+        <path d="M0 120 C 180 60 360 180 540 120 C 720 60 900 180 1080 120 L1080 260 L0 260 Z"/>
+        <path d="M0 170 C 200 110 380 220 560 160 C 740 100 920 210 1080 160 L1080 260 L0 260 Z" opacity="0.6"/>
+      </svg>
+    </div>
+  </div>
+
+  <script>
+    function fit(){
+      var s = Math.min(window.innerWidth/1080, (window.innerHeight-20)/1440) * 0.96;
+      if(s>1) s=1;
+      document.getElementById('scaler').style.transform = 'scale('+s+')';
+    }
+    window.addEventListener('resize', fit);
+    fit();
+  </script>
+</body>
+</html>

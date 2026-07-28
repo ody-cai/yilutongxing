@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>人脸签到 · 驿路同行</title>
+<style>
+  :root{--warm:#E8822E;--warm-soft:#F6A85C;--blue:#2C6FD6;--green:#1F9D55;
+    --red:#C5382A;--gray:#8a7a66;--bg:#FFF7EA;--card:#FFFFFF;--ink:#2B2118;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--ink);min-height:100dvh;
+    -webkit-user-select:none;user-select:none;}
+  .container{max-width:480px;margin:0 auto;padding:16px;min-height:100dvh;display:flex;flex-direction:column;}
+  header{text-align:center;padding:12px 0 8px;}
+  header h1{font-size:22px;font-weight:800;letter-spacing:2px;}
+  header p{font-size:13px;color:var(--gray);margin-top:2px;}
+  .mode-tabs{display:flex;gap:8px;margin:10px 0;}
+  .mode-tab{flex:1;padding:10px;border-radius:12px;border:2px solid #ddd;background:var(--card);
+    font-size:15px;font-weight:700;text-align:center;cursor:pointer;transition:all .2s;}
+  .mode-tab.active{border-color:var(--blue);background:var(--blue);color:#fff;}
+  .mode-tab:active{transform:scale(.96);}
+
+  /* Camera */
+  .camera-wrap{position:relative;border-radius:16px;overflow:hidden;background:#000;
+    aspect-ratio:4/3;margin:0 0 10px;box-shadow:0 4px 20px rgba(0,0,0,.15);}
+  .camera-wrap video{width:100%;height:100%;object-fit:cover;display:block;}
+  .camera-wrap canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
+  .camera-status{position:absolute;bottom:10px;left:10px;right:10px;
+    background:rgba(0,0,0,.65);color:#fff;padding:8px 12px;border-radius:10px;
+    font-size:13px;text-align:center;backdrop-filter:blur(4px);z-index:5;}
+  .camera-status.loading{background:rgba(44,111,214,.75);}
+  .camera-status.ok{background:rgba(31,157,85,.8);}
+  .camera-status.err{background:rgba(197,56,42,.8);}
+
+  /* Controls */
+  .controls{padding:6px 0 10px;}
+  .form-group{margin-bottom:8px;}
+  .form-group label{display:block;font-size:13px;font-weight:600;color:var(--gray);margin-bottom:4px;}
+  .form-group input{width:100%;padding:12px 14px;border:2px solid #e5dccc;border-radius:12px;
+    font-size:16px;background:var(--card);transition:border .2s;outline:none;}
+  .form-group input:focus{border-color:var(--blue);}
+  .btn{display:block;width:100%;padding:14px;border:none;border-radius:12px;
+    font-size:17px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center;}
+  .btn:active{transform:scale(.97);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+  .btn-primary{background:var(--blue);color:#fff;}
+  .btn-warm{background:var(--warm);color:#fff;}
+  .btn-success{background:var(--green);color:#fff;}
+  .btn-outline{background:var(--card);border:2px solid var(--blue);color:var(--blue);}
+  .btn-row{display:flex;gap:8px;margin:8px 0;}
+  .btn-row .btn{flex:1;}
+  .btn-sm{padding:10px;font-size:14px;}
+
+  /* Result */
+  .result-card{margin:8px 0;padding:16px;border-radius:14px;display:none;}
+  .result-card.show{display:block;animation:fadeIn .3s;}
+  .result-card.success{background:#E8F5E9;border:2px solid var(--green);}
+  .result-card.error{background:#FFEBEE;border:2px solid var(--red);}
+  .result-card.info{background:#E3F2FD;border:2px solid var(--blue);}
+  .result-card h3{font-size:18px;margin-bottom:4px;}
+  .result-card p{font-size:14px;color:#555;}
+
+  /* Matching face */
+  .match-face{width:48px;height:48px;border-radius:50%;object-fit:cover;
+    border:3px solid var(--green);margin-right:10px;}
+
+  /* Records */
+  .records-section{margin-top:auto;padding-top:12px;}
+  .records-section h3{font-size:15px;color:var(--gray);margin-bottom:8px;}
+  .records-list{max-height:180px;overflow-y:auto;}
+  .record-item{display:flex;justify-content:space-between;align-items:center;
+    padding:10px 12px;background:var(--card);border-radius:10px;margin-bottom:6px;
+    border:1px solid #f0e8dc;}
+  .record-item .name{font-weight:600;font-size:14px;}
+  .record-item .time{font-size:12px;color:var(--gray);}
+  .record-item .score{font-size:11px;padding:2px 8px;border-radius:6px;
+    background:#E8F5E9;color:var(--green);}
+  .record-empty{text-align:center;color:#ccc;padding:20px;font-size:14px;}
+  .record-item .label{font-size:11px;padding:2px 6px;border-radius:4px;background:#f0e8dc;color:var(--gray);}
+
+  .spinner{width:20px;height:20px;border:3px solid rgba(255,255,255,.3);
+    border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;
+    display:inline-block;vertical-align:middle;margin-right:6px;}
+
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  @keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<div class="container" id="app">
+  <header>
+    <h1>📷 人脸签到 · 驿路同行</h1>
+    <p>摄像头刷脸 · 1 秒入场</p>
+  </header>
+
+  <!-- Mode tabs -->
+  <div class="mode-tabs">
+    <div class="mode-tab active" data-mode="checkin" onclick="switchMode('checkin')">✅ 刷脸签到</div>
+    <div class="mode-tab" data-mode="enroll" onclick="switchMode('enroll')">📝 注册新面孔</div>
+  </div>
+
+  <!-- Camera -->
+  <div class="camera-wrap" id="cameraWrap">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="overlay"></canvas>
+    <div class="camera-status" id="cameraStatus">📷 正在打开摄像头…</div>
+  </div>
+
+  <!-- Mode-specific controls -->
+  <div class="controls" id="controlsCheckin">
+    <button class="btn btn-primary" id="btnCheckin" onclick="doCheckin()">
+      📸 开始刷脸签到
+    </button>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn btn-sm btn-outline" style="flex:1;" onclick="showManualForm()">✍️ 手动签到</button>
+      <button class="btn btn-sm btn-outline" style="flex:1;" onclick="switchMode('enroll')">📝 注册</button>
+    </div>
+    <div class="result-card" id="resultCheckin"></div>
+  </div>
+
+  <div class="controls" id="controlsEnroll" style="display:none;">
+    <div class="form-group">
+      <label>姓名 <span style="color:var(--red)">*</span></label>
+      <input type="text" id="inputName" placeholder="请输入真实姓名" maxlength="20" />
+    </div>
+    <div class="form-group">
+      <label>手机号（选填）</label>
+      <input type="tel" id="inputPhone" placeholder="方便紧急联系" maxlength="11" />
+    </div>
+    <div class="form-group">
+      <label>所属单位（选填）</label>
+      <input type="text" id="inputCompany" placeholder="如：二七区环卫队" maxlength="50" />
+    </div>
+    <button class="btn btn-warm" id="btnEnroll" onclick="doEnroll()">📸 拍照注册</button>
+    <div class="result-card" id="resultEnroll"></div>
+  </div>
+
+  <!-- Today's records -->
+  <div class="records-section">
+    <h3>📋 今日签到记录</h3>
+    <div class="records-list" id="recordsList">
+      <div class="record-empty">加载中…</div>
+    </div>
+  </div>
+</div>
+
+<!-- 手动签到表单（默认隐藏）-->
+<div id="manualFormOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:360px;">
+    <h3 style="margin-bottom:12px;">✍️ 手动签到</h3>
+    <input type="text" id="manualName" placeholder="请输入您的姓名" style="width:100%;padding:12px;border:2px solid #e5dccc;border-radius:10px;font-size:16px;outline:none;" maxlength="20" />
+    <div class="btn-row" style="margin-top:12px;">
+      <button class="btn btn-sm btn-outline" onclick="closeManualForm()">取消</button>
+      <button class="btn btn-sm btn-success" onclick="submitManualCheckin()">签到</button>
+    </div>
+  </div>
+</div>
+
+<!-- face-api.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"
+  onerror="this.onerror=null;var s=document.createElement('script');s.src='https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js';s.onerror=function(){window.__faceApiFailed=true};document.head.appendChild(s)"></script>
+<script>
+// ─────────────────────────── Configuration ───────────────────────────
+const API_BASE = window.__API_BASE__ || 'YOUR_WORKER_URL';
+const MODEL_URL = '/models';
+const MATCH_THRESHOLD = 0.55;
+
+// ─────────────────────────── State ───────────────────────────
+let stream = null;
+let modelsLoaded = false;
+let modelLoading = false;
+let isProcessing = false;
+let animationId = null;
+let enrolledFaces = [];
+let todayRecords = [];
+
+// DOM refs
+const $ = id => document.getElementById(id);
+const videoEl = $('video');
+const overlayCanvas = $('overlay');
+const ctx = overlayCanvas.getContext('2d');
+
+// ─────────────────────────── Init ───────────────────────────
+async function init() {
+  startDataLoads();
+  startCameraAndPreview();
+  loadFaceModelsInBackground();
+}
+
+// 数据加载（不阻塞 UI）
+function startDataLoads() {
+  loadEnrolledFaces().catch(() => {});
+  loadTodayRecords().catch(() => {});
+}
+
+// ───────── camera + 纯预览（无实时人脸检测，零卡顿）─────────
+async function startCameraAndPreview() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+      audio: false,
+    });
+    videoEl.srcObject = stream;
+    await videoEl.play();
+    overlayCanvas.width = videoEl.videoWidth || 640;
+    overlayCanvas.height = videoEl.videoHeight || 480;
+    showCameraStatus('📷 摄像头已就绪，请面对摄像头', 'ok');
+    // 启动纯预览动画（只画引导框，不跑检测）
+    startGuideAnimation();
+  } catch (e) {
+    if (e.name === 'NotAllowedError') {
+      showCameraStatus('⚠️ 请允许摄像头访问', 'err');
+    } else if (e.name === 'NotFoundError') {
+      showCameraStatus('⚠️ 未检测到摄像头', 'err');
+    } else {
+      showCameraStatus('⚠️ 摄像头启动失败: ' + e.message, 'err');
+    }
+  }
+}
+
+// 画引导框（比实时人脸检测流畅 100 倍）
+// 如果浏览器支持原生 FaceDetector（Chrome），用它画真实的检测框
+let useNativeDetector = false;
+let nativeDetector = null;
+
+function initNativeDetector() {
+  if (window.FaceDetector && !nativeDetector) {
+    try {
+      nativeDetector = new FaceDetector({ maxDetectedFaces: 1, fastMode: true });
+      useNativeDetector = true;
+      console.log('✅ 使用原生 FaceDetector');
+    } catch (e) { /* ignore */ }
+  }
+}
+
+function startGuideAnimation() {
+  initNativeDetector();
+
+  async function frame() {
+    ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+    const w = overlayCanvas.width;
+    const h = overlayCanvas.height;
+
+    if (useNativeDetector && videoEl.readyState >= 2) {
+      // 原生检测——毫秒级，不卡顿
+      try {
+        const faces = await nativeDetector.detect(videoEl);
+        if (faces.length > 0) {
+          const face = faces[0].boundingBox;
+          ctx.strokeStyle = '#1F9D55';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(face.x, face.y, face.width, face.height);
+          ctx.fillStyle = 'rgba(31,157,85,0.85)';
+          ctx.font = 'bold 14px sans-serif';
+          ctx.fillText('✓ 检测到人脸', face.x, face.y - 6);
+        }
+      } catch (e) {
+        // 检测失败时降级到引导框
+        useNativeDetector = false;
+        drawGuideOval(w, h);
+      }
+    } else {
+      // 无检测：画淡色引导椭圆
+      drawGuideOval(w, h);
+    }
+
+    animationId = requestAnimationFrame(frame);
+  }
+  animationId = requestAnimationFrame(frame);
+}
+
+function drawGuideOval(w, h) {
+  const cx = w / 2;
+  const cy = h * 0.38;
+  const rx = w * 0.18;
+  const ry = h * 0.2;
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 8]);
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('将面部置于此区域', cx, cy + ry + 22);
+  ctx.textAlign = 'left';
+  ctx.restore();
+}
+
+// ───────── 加载模型（后台静默加载，成功后启用）─────────
+async function loadFaceModelsInBackground() {
+  if (modelLoading) return;
+  modelLoading = true;
+
+  // 等 faceapi 库加载
+  if (typeof faceapi === 'undefined') {
+    if (window.__faceApiFailed) return;
+    let waited = 0;
+    while (typeof faceapi === 'undefined' && waited < 15) {
+      await new Promise(r => setTimeout(r, 1000));
+      waited++;
+    }
+    if (typeof faceapi === 'undefined') return;
+  }
+
+  try {
+    showCameraStatus('📷 摄像头已就绪，后台加载人脸模型…', 'loading');
+    // 只加载检测需要的前两个模型，识别模型等用的时候再加载
+    await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+    await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+    // 识别模型较大，后台加载，不阻塞
+    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL).then(() => {
+      console.log('✅ face_recognition ready');
+    }).catch(() => {});
+    modelsLoaded = true;
+    showCameraStatus('📷 摄像头已就绪，请面对摄像头', 'ok');
+    console.log('✅ detector + landmark loaded');
+  } catch (e) {
+    console.warn('Model load issue (non-fatal):', e.message);
+    showCameraStatus('📷 摄像头已就绪，刷脸功能可用', 'ok');
+  }
+}
+
+// ───────── 人脸捕获（点按钮时跑一次）─────────
+async function captureFace() {
+  // 确保识别模型也加载了
+  if (!faceapi.nets.faceRecognitionNet.loaded) {
+    await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+  }
+
+  const result = await faceapi
+    .detectSingleFace(videoEl, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
+    .withFaceLandmarks()
+    .withFaceDescriptor();
+
+  if (!result) throw new Error('未检测到人脸，请确保面部正对摄像头');
+  return result;
+}
+
+function captureThumbnail(box) {
+  const c = document.createElement('canvas');
+  c.width = box.width;
+  c.height = box.height;
+  const tmp = c.getContext('2d');
+  tmp.drawImage(videoEl, box.x, box.y, box.width, box.height, 0, 0, box.width, box.height);
+  return c.toDataURL('image/jpeg', 0.6);
+}
+
+// ───────── 人脸比对（欧氏距离）─────────
+function euclideanDistance(a, b) {
+  let sum = 0;
+  for (let i = 0; i < a.length; i++) {
+    const d = a[i] - b[i];
+    sum += d * d;
+  }
+  return Math.sqrt(sum);
+}
+
+function findBestMatch(descriptor) {
+  if (!enrolledFaces.length) return null;
+  let best = null, bestDist = Infinity;
+  for (const face of enrolledFaces) {
+    const dist = euclideanDistance(descriptor, face.descriptor);
+    if (dist < bestDist) { bestDist = dist; best = face; }
+  }
+  return { match: best, distance: bestDist };
+}
+
+// ───────── API ─────────
+async function apiFetch(path, options = {}) {
+  const res = await fetch(API_BASE + path, {
+    headers: { 'content-type': 'application/json', ...options.headers },
+    ...options,
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.message || '请求失败');
+  return data.data;
+}
+
+async function loadEnrolledFaces() {
+  const data = await apiFetch('/api/face/enrollments');
+  enrolledFaces = data.items.map(i => ({
+    id: i.id, name: i.name, descriptor: i.descriptor, thumbnail: i.thumbnail,
+  }));
+}
+
+async function loadTodayRecords() {
+  const today = new Date().toISOString().slice(0, 10);
+  const data = await apiFetch(`/api/face/records?date=${today}&limit=50`);
+  todayRecords = data.items;
+  renderRecords();
+}
+
+// ───────── Mode ─────────
+function switchMode(mode) {
+  document.querySelectorAll('.mode-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.mode === mode));
+  $('controlsCheckin').style.display = mode === 'checkin' ? 'block' : 'none';
+  $('controlsEnroll').style.display = mode === 'enroll' ? 'block' : 'none';
+  $('resultCheckin').classList.remove('show');
+  $('resultEnroll').classList.remove('show');
+}
+
+// ───────── Check-in ─────────
+async function doCheckin() {
+  if (isProcessing) return;
+  const btn = $('btnCheckin');
+  const resultEl = $('resultCheckin');
+  isProcessing = true;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 识别中…';
+  resultEl.classList.remove('show');
+  showCameraStatus('⏳ 正在识别人脸…', 'loading');
+
+  try {
+    const face = await captureFace();
+    const descriptor = Array.from(face.descriptor);
+    const match = findBestMatch(descriptor);
+
+    if (match && match.distance < MATCH_THRESHOLD) {
+      const m = match.match;
+      const score = Math.max(0, 1 - match.distance);
+      await apiFetch('/api/face/checkin', {
+        method: 'POST',
+        body: JSON.stringify({ face_id: m.id, name: m.name, score, station_id: null }),
+      });
+      resultEl.className = 'result-card success show';
+      const thumb = m.thumbnail;
+      resultEl.innerHTML = `
+        <div style="display:flex;align-items:center;gap:4px;">
+          ${thumb ? `<img src="${thumb}" class="match-face" alt="" />` : '<span style="font-size:36px;">👋</span>'}
+          <div><h3>✅ 签到成功！欢迎 ${m.name}</h3><p>匹配度 ${Math.round(score * 100)}%</p></div>
+        </div>`;
+      showCameraStatus(`✅ ${m.name} 签到成功`, 'ok');
+    } else {
+      const closest = match ? match.match.name : '—';
+      resultEl.className = 'result-card error show';
+      resultEl.innerHTML = `
+        <h3>⚠️ 未匹配到注册面孔</h3>
+        <p style="font-size:13px;">最近匹配: ${closest}</p>
+        <div class="btn-row" style="margin-top:10px;">
+          <button class="btn btn-sm btn-warm" onclick="switchMode('enroll')">📝 注册</button>
+          <button class="btn btn-sm btn-outline" onclick="showManualForm()">✍️ 手动签</button>
+        </div>`;
+      showCameraStatus('⚠️ 人脸未注册', 'err');
+    }
+    await loadTodayRecords();
+  } catch (e) {
+    resultEl.className = 'result-card error show';
+    resultEl.innerHTML = `<h3>❌ 识别失败</h3><p>${e.message}</p>`;
+    showCameraStatus('❌ ' + e.message, 'err');
+  }
+  isProcessing = false;
+  btn.disabled = false;
+  btn.innerHTML = '📸 开始刷脸签到';
+}
+
+// ───────── Enroll ─────────
+async function doEnroll() {
+  if (isProcessing) return;
+  const name = $('inputName').value.trim();
+  if (!name) {
+    $('resultEnroll').className = 'result-card error show';
+    $('resultEnroll').innerHTML = '<h3>⚠️ 请输入姓名</h3>';
+    $('inputName').focus();
+    return;
+  }
+  const btn = $('btnEnroll');
+  const resultEl = $('resultEnroll');
+  isProcessing = true;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 注册中…';
+  resultEl.classList.remove('show');
+  showCameraStatus('⏳ 正在注册人脸…', 'loading');
+
+  try {
+    const face = await captureFace();
+    const descriptor = Array.from(face.descriptor);
+    const thumbnail = captureThumbnail(face.detection.box);
+    const phone = $('inputPhone').value.trim();
+    const company = $('inputCompany').value.trim();
+
+    await apiFetch('/api/face/enroll', {
+      method: 'POST', body: JSON.stringify({
+        name, descriptor, thumbnail,
+        phone: phone || null,
+        company: company || null,
+      }),
+    });
+
+    resultEl.className = 'result-card success show';
+    resultEl.innerHTML = `<h3>🎉 注册成功！</h3><p>${name} 已录入，可刷脸签到了</p>
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="btn btn-sm btn-primary" onclick="switchMode('checkin')">✅ 去签到</button>
+      </div>`;
+    showCameraStatus('✅ 注册成功', 'ok');
+    $('inputName').value = '';
+    $('inputPhone').value = '';
+    $('inputCompany').value = '';
+    await loadEnrolledFaces();
+    await loadTodayRecords();
+  } catch (e) {
+    resultEl.className = 'result-card error show';
+    resultEl.innerHTML = `<h3>❌ 注册失败</h3><p>${e.message}</p>`;
+    showCameraStatus('❌ ' + e.message, 'err');
+  }
+  isProcessing = false;
+  btn.disabled = false;
+  btn.innerHTML = '📸 拍照注册';
+}
+
+// ───────── Manual Check-in ─────────
+function showManualForm() { $('manualFormOverlay').style.display = 'flex'; }
+function closeManualForm() { $('manualFormOverlay').style.display = 'none'; }
+async function submitManualCheckin() {
+  const name = $('manualName').value.trim();
+  if (!name) return;
+  try {
+    await apiFetch('/api/face/checkin', { method: 'POST', body: JSON.stringify({ name, entry_type: 'manual' }) });
+    closeManualForm();
+    $('manualName').value = '';
+    $('resultCheckin').className = 'result-card success show';
+    $('resultCheckin').innerHTML = `<h3>✅ 签到成功！欢迎 ${name}</h3>`;
+    showCameraStatus(`✅ ${name} 手动签到成功`, 'ok');
+    await loadTodayRecords();
+  } catch (e) {
+    $('resultCheckin').className = 'result-card error show';
+    $('resultCheckin').innerHTML = `<h3>❌ 签到失败</h3><p>${e.message}</p>`;
+  }
+}
+
+// ───────── UI ─────────
+function showCameraStatus(msg, type) {
+  const el = $('cameraStatus');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'camera-status';
+  if (type) el.classList.add(type);
+}
+
+function renderRecords() {
+  const list = $('recordsList');
+  if (!todayRecords.length) {
+    list.innerHTML = '<div class="record-empty">📭 暂无签到记录</div>';
+    return;
+  }
+  list.innerHTML = todayRecords.map(r => `
+    <div class="record-item">
+      <div>
+        <div class="name">${r.name}</div>
+        <div class="label">${r.entry_type === 'face' ? '人脸' : '手动'}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="time">${formatTime(r.created_at)}</div>
+        ${r.score ? `<div class="score">${Math.round(r.score * 100)}%</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function formatTime(iso) {
+  try { return new Date(iso).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }); }
+  catch { return iso; }
+}
+
+// ───────── Cleanup ─────────
+window.addEventListener('beforeunload', () => {
+  if (animationId) cancelAnimationFrame(animationId);
+  if (stream) stream.getTracks().forEach(t => t.stop());
+});
+window.addEventListener('pagehide', () => {
+  if (animationId) cancelAnimationFrame(animationId);
+  if (stream) stream.getTracks().forEach(t => t.stop());
+});
+
+// ───────── Rocket ─────────
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+<view class="card station-card" bindtap="onTap">
+  <view class="hd">
+    <text class="name">{{station.name}}</text>
+    <text class="badge badge-{{station.status}}" wx:if="{{station.status_label}}">{{station.status_label}}</text>
+  </view>
+
+  <view class="addr">{{station.address}}</view>
+
+  <view class="ft" wx:if="{{showDistance || showFacilities}}">
+    <text class="dist" wx:if="{{showDistance && distanceLabel}}">
+      {{distanceLabel}}
+    </text>
+    <view class="fac" wx:if="{{showFacilities && station.facility_labels.length}}">
+      <text class="fac-item" wx:for="{{station.facility_labels}}" wx:key="key">{{item.label}}</text>
+    </view>
+  </view>
+</view>

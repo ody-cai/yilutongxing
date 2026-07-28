@@ -1,0 +1,28 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/detail/detail",
+    "pages/feedback/feedback",
+    "pages/about/about"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#07c160",
+    "navigationBarTitleText": "「驿」路同行",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f5f6f8"
+  },
+  "tabBar": {
+    "color": "#888888",
+    "selectedColor": "#07c160",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "找驿站", "iconPath": "assets/tabbar/home.png", "selectedIconPath": "assets/tabbar/home_active.png" },
+      { "pagePath": "pages/feedback/feedback", "text": "留言", "iconPath": "assets/tabbar/feedback.png", "selectedIconPath": "assets/tabbar/feedback_active.png" },
+      { "pagePath": "pages/about/about", "text": "关于", "iconPath": "assets/tabbar/about.png", "selectedIconPath": "assets/tabbar/about_active.png" }
+    ]
+  },
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents",
+  "style": "v2"
+}

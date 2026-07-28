@@ -1,0 +1,38 @@
+<view class="page">
+  <view class="hero card">
+    <view class="title">「驿」路同行</view>
+    <view class="subtitle">高温劳动者护航行动 · 环卫工人歇脚驿站地图</view>
+  </view>
+
+  <view class="stats card" wx:if="{{stats}}">
+    <view class="stat">
+      <view class="num">{{stats.total}}</view>
+      <view class="lab">已收录驿站</view>
+    </view>
+    <view class="stat" wx:for="{{stats.by_status}}" wx:key="key">
+      <view class="num">{{item.count}}</view>
+      <view class="lab">{{item.label}}</view>
+    </view>
+  </view>
+
+  <view class="card intro">
+    <view class="h">我们在做什么</view>
+    <view class="p">郑州夏季高温漫长，环卫工等户外劳动者亟需饮水、避暑、休息的「清凉依靠」。我们绘制驿站地图，让最需要的人一键找到离自己最近的歇脚点，并支持留言反馈，推动驿站「建—管—用」闭环优化。</view>
+
+    <view class="h">你可以做什么</view>
+    <view class="p">· 打开小程序，授权定位，发现身边驿站</view>
+    <view class="p">· 一键导航前往，歇脚、补水、充电</view>
+    <view class="p">· 发现驿站异常或想点赞，随手留言</view>
+    <view class="p">· 把小程序分享给身边的高温劳动者</view>
+  </view>
+
+  <view class="card site" bindtap="copySite">
+    <view class="site-l">
+      <view class="site-name">{{siteName}}</view>
+      <view class="site-url">{{siteUrl}}</view>
+    </view>
+    <view class="site-btn">复制链接</view>
+  </view>
+
+  <view class="foot">全国中学生领导力大赛 · 「驿」路同行项目组</view>
+</view>

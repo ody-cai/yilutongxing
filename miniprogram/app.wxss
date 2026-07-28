@@ -1,0 +1,55 @@
+/* 全局样式 —— 微信绿主题 */
+page {
+  background: #f5f6f8;
+  font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+  color: #1f2329;
+  font-size: 28rpx;
+}
+
+.card {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  margin: 0 24rpx 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+.btn-primary {
+  background: #07c160;
+  color: #fff;
+  border-radius: 999rpx;
+  font-size: 30rpx;
+  padding: 18rpx 0;
+  text-align: center;
+}
+
+.btn-primary[disabled] {
+  background: #9ed9b8;
+}
+
+.btn-ghost {
+  background: #fff;
+  color: #07c160;
+  border: 2rpx solid #07c160;
+  border-radius: 999rpx;
+  font-size: 30rpx;
+  padding: 18rpx 0;
+  text-align: center;
+}
+
+.badge {
+  font-size: 22rpx;
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+  line-height: 1.4;
+}
+.badge-open { background: #e7f7ee; color: #07c160; }
+.badge-closed { background: #f2f3f5; color: #8a8f99; }
+.badge-maintenance { background: #fff4e5; color: #ff8f1f; }
+
+.empty {
+  text-align: center;
+  color: #8a8f99;
+  padding: 80rpx 0;
+  font-size: 26rpx;
+}

@@ -1,0 +1,58 @@
+<view class="page">
+  <view class="search">
+    <input
+      class="search-input"
+      placeholder="搜索驿站名称 / 区域 / 地址"
+      placeholder-class="search-ph"
+      value="{{keyword}}"
+      bindinput="onSearchInput"
+      confirm-type="search"
+    />
+  </view>
+
+  <view class="map-wrap">
+    <map
+      id="map"
+      class="map"
+      latitude="{{center.lat}}"
+      longitude="{{center.lng}}"
+      scale="{{scale}}"
+      markers="{{markers}}"
+      show-location="{{canUseLocation}}"
+      bindmarkertap="onMarkerTap"
+    ></map>
+    <view class="map-tip" wx:if="{{!canUseLocation}}">当前账号不支持自动定位 · 可搜索查找</view>
+    <view class="map-tip" wx:elif="{{!hasLocation}}">未授权定位 · 已展示全部驿站</view>
+  </view>
+
+  <view class="tabs" wx:if="{{canUseLocation}}">
+    <view class="tab {{tab==='nearby'?'active':''}}" data-tab="nearby" bindtap="switchTab">附近</view>
+    <view class="tab {{tab==='all'?'active':''}}" data-tab="all" bindtap="switchTab">全部</view>
+  </view>
+  <view class="list-title" wx:else>全部驿站（{{stations.length}}）</view>
+
+  <scroll-view class="list" scroll-y enable-flex>
+    <station-card
+      wx:for="{{stations}}"
+      wx:key="id"
+      station="{{item}}"
+      show-distance="{{tab==='nearby' && canUseLocation}}"
+      show-facilities="{{false}}"
+    ></station-card>
+    <view wx:if="{{!loading && stations.length===0}}" class="empty">没有匹配的驿站，换个关键词试试</view>
+  </scroll-view>
+
+  <!-- 冷启动定位提示弹窗：可手动关闭，5 秒自动消失 -->
+  <view class="loc-tip-mask" wx:if="{{showLocTip}}" bindtap="closeLocTip">
+    <view class="loc-tip-card">
+      <view class="loc-tip-close" bindtap="closeLocTip">×</view>
+      <view class="loc-tip-title">
+        <text class="loc-tip-emoji">📍</text> 关于定位功能
+      </view>
+      <view class="loc-tip-body">
+        本小程序当前暂未开通「自动定位」与「一键导航」功能。您仍可通过上方搜索框，或浏览下方列表，查找离您最近的歇脚驿站。带来不便，敬请谅解～
+      </view>
+      <view class="loc-tip-ok" bindtap="closeLocTip">我知道了</view>
+    </view>
+  </view>
+</view>

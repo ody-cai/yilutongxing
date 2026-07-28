@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+  <meta name="theme-color" content="#F5A623" />
+  <meta name="description" content="「驿」路同行 — 高温劳动者护航行动。为环卫工人提供就近歇脚驿站地图，覆盖郑州全市。" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="驿路同行" />
+
+  <title>「驿」路同行 — 环卫工人歇脚驿站地图</title>
+
+  <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="./assets/logo.png" />
+  <link rel="stylesheet" href="./styles.css?v=12" />
+
+  <!--
+    ============================================================
+    高德地图 JS API（前端独立部署版）
+    ============================================================
+    你需要在高德开放平台 https://lbs.amap.com/ 申请「Web 端 JS API Key」，
+    然后把下面的占位符换成你的 Key（建议做「域名白名单」限制）。
+    生产环境：推荐加上 _securityJsCode 以提升安全等级。
+    ============================================================
+  -->
+  <script>
+    window.__AMAP_KEY__ = 'YOUR_AMAP_KEY';   // 请在高德开放平台 https://lbs.amap.com/ 申请「Web端(JS API)」Key
+    // 采用高德 JS API 1.4：无需 securityJsCode 安全密钥、也不做瓦片域名白名单，
+    // 从根本上规避 2.0 因安全密钥域名未放行导致瓦片被拦截、地图卡在「加载中」的问题。
+  </script>
+  <script defer src="https://webapi.amap.com/maps?v=1.4.15&key=YOUR_AMAP_KEY"></script>
+
+  <!--
+    ============================================================
+    后端 API 基址
+    ============================================================
+    部署 Cloudflare Workers 后，把后端域名填入下方 API_BASE。
+    默认使用相对路径（适合同域反代部署）；若是独立域名请写完整 URL。
+    ============================================================
+  -->
+  <script>
+    window.__API_BASE__ = 'YOUR_WORKER_URL';   // 替换为你的 Cloudflare Workers 地址，如 https://your-api.your-subdomain.workers.dev
+  </script>
+</head>
+<body>
+  <!-- ───────────── 顶部导航 ───────────── -->
+  <header class="app-header">
+    <div class="brand">
+      <img class="brand-logo" src="./assets/logo.png" alt="驿路同行" />
+      <div class="brand-text">
+        <div class="brand-title">「驿」路同行</div>
+        <div class="brand-subtitle">高温劳动者护航行动 · 郑州</div>
+      </div>
+    </div>
+    <button id="locate-btn" class="btn btn-icon" type="button" aria-label="定位到我的位置">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+      </svg>
+      <span class="btn-icon-label">我的位置</span>
+    </button>
+  </header>
+
+  <!-- ───────────── 诊断条（排查用，确认正常后可删） ───────────── -->
+  <div id="debug-banner" class="debug-banner" role="status"></div>
+
+  <!-- ───────────── 主视图容器 ───────────── -->
+  <main id="app-views">
+
+    <!-- 视图 1：驿站地图（首页） -->
+    <section id="view-map" class="view is-active" aria-label="驿站地图">
+      <!-- 筛选条 -->
+      <section class="filter-bar" aria-label="筛选">
+        <div class="filter-row">
+          <label class="filter-select">
+            <span class="sr-only">区域</span>
+            <select id="filter-district">
+              <option value="">全部区域</option>
+            </select>
+          </label>
+          <label class="filter-select">
+            <span class="sr-only">设施</span>
+            <select id="filter-facility">
+              <option value="">全部设施</option>
+            </select>
+          </label>
+          <label class="filter-select">
+            <span class="sr-only">状态</span>
+            <select id="filter-status">
+              <option value="open">仅显示开放</option>
+              <option value="">全部状态</option>
+              <option value="closed">仅显示关闭</option>
+              <option value="maintenance">维护中</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <!-- 地图 -->
+      <section class="map-wrap" aria-label="驿站地图">
+        <div id="map" role="application" aria-label="高德地图"></div>
+        <div id="map-loading" class="map-loading" role="status">地图加载中…</div>
+        <div id="map-error" class="map-error" role="alert" hidden></div>
+        <button id="map-refresh" class="btn btn-floating" type="button" hidden>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/>
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/>
+          </svg>
+          刷新
+        </button>
+      </section>
+
+      <!-- 列表区 -->
+      <div class="list-wrap" aria-label="驿站列表">
+        <div class="list-head">
+          <h2 class="list-title">附近驿站</h2>
+          <div class="list-meta">
+            <span id="list-count">加载中…</span>
+            <span id="list-sort" class="list-sort-tag">按距离排序</span>
+          </div>
+        </div>
+        <ul id="station-list" class="station-list" aria-live="polite"></ul>
+        <div id="list-empty" class="list-empty" hidden>
+          <div class="list-empty-icon" aria-hidden="true">🗺️</div>
+          <p>附近暂无可用驿站</p>
+          <p class="list-empty-hint">试试切换筛选或扩大搜索范围</p>
+        </div>
+      </div>
+
+      <!-- 底部：反馈入口 + 数据统计 -->
+      <footer class="app-footer">
+        <div class="stats" aria-label="数据概览">
+          <div class="stat">
+            <div class="stat-num" id="stat-total">—</div>
+            <div class="stat-label">驿站总数</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num" id="stat-open">—</div>
+            <div class="stat-label">正在开放</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num" id="stat-districts">—</div>
+            <div class="stat-label">覆盖区域</div>
+          </div>
+        </div>
+        <button id="feedback-btn" class="btn btn-ghost" type="button">反馈与建议</button>
+        <p class="footer-tip">数据由项目组统一维护 · 联系：驿路同行项目组</p>
+      </footer>
+    </section>
+
+    <!-- 视图 2：一键报修（闭环） -->
+    <section id="view-repair" class="view" hidden aria-label="一键报修">
+      <div class="view-head">
+        <h2 class="view-title">一键报修</h2>
+        <p class="view-sub">上报 → 处理中 → 已修复，进度全程可见。</p>
+      </div>
+      <div class="view-toolbar">
+        <button id="repair-new-btn" class="btn btn-primary" type="button">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          我要报修
+        </button>
+        <span id="repair-count" class="view-meta">—</span>
+      </div>
+      <ul id="repair-list" class="repair-list" aria-live="polite"></ul>
+      <div id="repair-empty" class="view-empty" hidden>
+        <div class="view-empty-icon" aria-hidden="true">🛠️</div>
+        <p>还没有报修记录</p>
+        <p class="view-empty-hint">发现驿站设施损坏？点「我要报修」，我们会闭环跟进。</p>
+      </div>
+    </section>
+
+    <!-- 视图 3：权益自助站（工会专属） -->
+    <section id="view-benefits" class="view" hidden aria-label="权益自助站">
+      <div class="view-head">
+        <h2 class="view-title">权益自助站 <span class="union-badge">工会专属</span></h2>
+        <p class="view-sub">户外劳动者可自助查询与领取的工会权益，凭专属口令解锁。</p>
+      </div>
+
+      <!-- 未解锁：口令校验 -->
+      <div id="benefits-lock" class="benefits-lock">
+        <div class="benefits-lock-icon" aria-hidden="true">🔒</div>
+        <p class="benefits-lock-tip">请输入工会专属口令以查看可办理权益</p>
+        <div class="benefits-lock-row">
+          <input id="benefits-code" type="password" maxlength="40" placeholder="工会专属口令" autocomplete="off" />
+          <button id="benefits-unlock" class="btn btn-primary" type="button">验证</button>
+        </div>
+        <p id="benefits-lock-status" class="form-status" hidden></p>
+        <p class="benefits-lock-hint">口令由各区总工会/项目组分发，普通访客无法查看，确保专属权益不外泄。</p>
+      </div>
+
+      <!-- 已解锁：权益卡片 -->
+      <div id="benefits-list" class="benefits-grid" hidden></div>
+    </section>
+
+    <!-- 视图 4：数据驾驶舱 -->
+    <section id="view-dash" class="view" hidden aria-label="数据驾驶舱">
+      <div class="view-head">
+        <h2 class="view-title">数据驾驶舱</h2>
+        <p class="view-sub">扩点有依据、领导有数 —— 驿站 / 报修 / 众包选址一屏掌握。</p>
+      </div>
+
+      <div id="dash-kpi" class="kpi-row"></div>
+
+      <div class="dash-card">
+        <h3 class="dash-card-title">驿站状态分布</h3>
+        <div id="dash-station-status" class="bar-list"></div>
+      </div>
+
+      <div class="dash-card">
+        <h3 class="dash-card-title">区域覆盖（Top 8）</h3>
+        <div id="dash-district" class="bar-list"></div>
+      </div>
+
+      <div class="dash-grid">
+        <div class="dash-card">
+          <h3 class="dash-card-title">报修闭环</h3>
+          <div id="dash-repair" class="bar-list"></div>
+        </div>
+        <div class="dash-card">
+          <h3 class="dash-card-title">众包选址</h3>
+          <div id="dash-suggest" class="bar-list"></div>
+        </div>
+      </div>
+
+      <div class="dash-card">
+        <h3 class="dash-card-title">近期动态</h3>
+        <ul id="dash-activity" class="activity-list"></ul>
+      </div>
+
+      <!-- 驿站选址众包 -->
+      <div class="dash-card">
+        <h3 class="dash-card-title">驿站选址众包</h3>
+        <p class="dash-hint">在地图上点选推荐位置，填写理由提交，项目组将实地考察并采纳。</p>
+        <div class="suggest-map-wrap">
+          <div id="dash-map" role="application" aria-label="选址地图"></div>
+          <div id="dash-map-tip" class="suggest-map-tip">点击地图选择推荐点位</div>
+        </div>
+        <label class="form-label">
+          <span>推荐理由 *</span>
+          <textarea id="sg-reason" rows="3" maxlength="300" placeholder="如：此处环卫工人密集、缺乏歇脚点…"></textarea>
+        </label>
+        <label class="form-label">
+          <span>地址 / 所属区（可选）</span>
+          <input id="sg-address" type="text" maxlength="200" placeholder="如：金水区花园路某路口" />
+        </label>
+        <label class="form-label">
+          <span>联系方式（可选）</span>
+          <input id="sg-contact" type="tel" maxlength="60" placeholder="便于回访" />
+        </label>
+        <button id="sg-submit" class="btn btn-primary" type="button" style="width:100%;min-height:46px;">提交选址建议</button>
+        <p id="sg-status" class="form-status" hidden></p>
+      </div>
+
+      <div class="dash-card">
+        <h3 class="dash-card-title">已收到的选址建议</h3>
+        <ul id="dash-suggest-list" class="suggest-list"></ul>
+      </div>
+    </section>
+
+    <!-- 视图 7：到期报废管理 -->
+    <section id="view-expiry" class="view" hidden aria-label="到期报废管理">
+      <div class="view-head">
+        <h2 class="view-title">商品到期报废管理</h2>
+        <p class="view-sub">记录免费商品的到期时间，到期自动提醒强制报废。</p>
+      </div>
+      <div class="view-toolbar">
+        <button id="exp-add-btn" class="btn btn-primary" type="button">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          录入商品
+        </button>
+        <span id="exp-count" class="view-meta">—</span>
+      </div>
+      <ul id="exp-list" class="exp-list" aria-live="polite"></ul>
+      <div id="exp-empty" class="view-empty" hidden>
+        <p>暂无商品记录</p>
+        <p class="view-empty-hint">点击「录入商品」添加免费商品，系统会自动提醒到期报废。</p>
+      </div>
+      <!-- 报废位置地图 -->
+      <div id="exp-map-wrap" hidden>
+        <div class="view-head" style="border-top:1px solid var(--c-border)">
+          <h3 class="view-title" style="font-size:15px;margin-bottom:2px;">📍 待报废商品位置</h3>
+          <p class="view-sub" id="exp-map-tip">以下商品已过期，请及时到位置处理。</p>
+        </div>
+        <div id="exp-map" style="height:200px;margin:0 12px 12px;border-radius:var(--radius-lg);overflow:hidden;"></div>
+      </div>
+    </section>
+
+    <!-- 视图 5：防暑歇脚指南 -->
+    <section id="view-guide" class="view" hidden aria-label="防暑歇脚指南">
+      <div class="view-head">
+        <h2 class="view-title">防暑歇脚指南</h2>
+        <p class="view-sub">收工后身体累？三步缓一缓，认准「降温友好」驿站。</p>
+      </div>
+
+      <div class="guide-hero">
+        <div class="guide-hero-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        </div>
+        <p class="guide-hero-text">高温下连续作业，<b>补水、降温、歇脚</b>是缓解疲劳的关键。这份指南专为环卫工朋友准备。</p>
+      </div>
+
+      <h3 class="guide-h">三个关键动作</h3>
+      <div class="guide-actions">
+        <div class="guide-card">
+          <div class="guide-card-ic">💧</div>
+          <div class="guide-card-t">先补水</div>
+          <p>少量多次喝<b>温水或淡盐水</b>，别等口渴才喝；<b>忌</b>一口气猛灌冰水。</p>
+        </div>
+        <div class="guide-card">
+          <div class="guide-card-ic">❄️</div>
+          <div class="guide-card-t">快降温</div>
+          <p>进驿站吹空调，用湿毛巾敷<b>颈后、手腕</b>；空调别直吹，进出温差别太大。</p>
+        </div>
+        <div class="guide-card">
+          <div class="guide-card-ic">🪑</div>
+          <div class="guide-card-t">歇一歇</div>
+          <p>每干 1–2 小时找阴凉处歇 <b>5–10 分钟</b>；收工后抬腿 15 分钟，缓解腿肿。</p>
+        </div>
+      </div>
+
+      <h3 class="guide-h">驿站能给你</h3>
+      <div class="guide-facilities">
+        <span class="facility-chip">饮水</span>
+        <span class="facility-chip">空调</span>
+        <span class="facility-chip">座椅</span>
+        <span class="facility-chip">充电</span>
+        <span class="facility-chip">急救包</span>
+        <span class="facility-chip">微波炉</span>
+      </div>
+      <p class="guide-note">认准「<b>降温友好</b>」标签：同时有<b>空调 + 饮水</b>的驿站，最适合缓解高温疲劳。</p>
+
+      <h3 class="guide-h guide-h-warn">⚠️ 中暑信号，马上停</h3>
+      <div class="guide-warn">
+        <p>出现以下任一，立刻到阴凉处、补水、解开衣领；严重者拨打 <b>120</b>：</p>
+        <ul>
+          <li>头晕、恶心、心慌、四肢无力</li>
+          <li>大量出汗或<b>突然不出汗</b>、皮肤发烫</li>
+          <li>体温升高、意识模糊</li>
+        </ul>
+      </div>
+
+      <button id="guide-find-btn" class="btn btn-primary" type="button" style="width:100%;min-height:50px;margin-top:4px;">
+        找最近的「降温友好」驿站
+      </button>
+
+      <h3 class="guide-h" style="margin-top:20px;">📸 刷脸签到</h3>
+      <div class="guide-hero" style="background:linear-gradient(135deg,#E3F2FD,#BBDEFB);">
+        <div class="guide-hero-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#2C6FD6" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h10l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+        <p class="guide-hero-text">刷脸入场，无需手写登记！注册一次，每次到站扫码即可脸部识别签到。<br/><b>相机只在签到页面打开，用完即关，请放心。</b></p>
+      </div>
+      <button id="btn-face-checkin" class="btn btn-warm" type="button" style="width:100%;min-height:50px;margin-top:8px;">
+        📷 打开刷脸签到
+      </button>
+
+      <p class="guide-foot">本指南由「驿」路同行项目组整理，供高温户外作业参考。</p>
+    </section>
+
+    <!-- 视图 8：关于我们 -->
+    <section id="view-about" class="view" hidden aria-label="关于项目组">
+      <div class="about-hero">
+        <img class="about-hero-logo" src="./assets/logo.png" alt="驿路同行" />
+        <h1 class="about-hero-title">「驿」路同行</h1>
+        <p class="about-hero-sub">高温劳动者护航行动 · 郑州</p>
+      </div>
+
+      <!-- 宣传片 + 播客 -->
+      <div class="about-card">
+        <h2 class="about-h">项目影像</h2>
+        <div class="about-media-grid">
+          <!-- 宣传片：抖音 -->
+          <a href="https://v.douyin.com/niw6v72D7S4/" target="_blank" rel="noopener" class="about-media-link">
+            <div class="about-media-icon about-media-icon-play">
+              <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5,3 19,12 5,21" fill="currentColor" stroke="none"/></svg>
+            </div>
+            <p class="about-media-title">项目宣传片</p>
+            <p class="about-media-desc">「驿路同行」官方宣传短片</p>
+            <span class="about-media-btn">前往抖音观看 →</span>
+          </a>
+          <!-- 播客：微信 -->
+          <a href="https://mp.weixin.qq.com/s/oj7c_JOPVijHL-ZIl7aW6A" target="_blank" rel="noopener" class="about-media-link">
+            <div class="about-media-icon about-media-icon-podcast">
+              <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            </div>
+            <p class="about-media-title">项目播客</p>
+            <p class="about-media-desc">背后的故事与思考，用声音传递</p>
+            <span class="about-media-btn">前往微信收听 →</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="about-card">
+        <h2 class="about-h">项目背景</h2>
+        <p>每年夏季，郑州持续高温，环卫工人、快递员、外卖骑手等户外劳动者面临中暑、脱水等健康风险。然而基层劳动者寻找歇脚点的成本很高——信息不对称、驿站状态不透明、设施是否可用不清楚。</p>
+        <p>「驿」路同行项目由此诞生：我们希望用一张可交互的地图，让每一位户外劳动者都能<b>快速找到离自己最近的、设施齐全的歇脚驿站</b>，喝口水、吹吹空调、缓一缓再出发。</p>
+      </div>
+
+      <div class="about-card">
+        <h2 class="about-h">核心功能</h2>
+        <div class="about-features">
+          <div class="about-feat">
+            <div class="about-feat-icon">🗺️</div>
+            <div class="about-feat-text">
+              <b>驿站地图</b>
+              <p>82 个工会/城管确认的歇脚驿站，实时状态、设施标签一目了然</p>
+            </div>
+          </div>
+          <div class="about-feat">
+            <div class="about-feat-icon">🔧</div>
+            <div class="about-feat-text">
+              <b>一键报修</b>
+              <p>发现饮水机坏了、空调不制冷？拍照报修，闭环跟踪至修复</p>
+            </div>
+          </div>
+          <div class="about-feat">
+            <div class="about-feat-icon">⭐</div>
+            <div class="about-feat-text">
+              <b>权益自助站</b>
+              <p>工会高温补贴、法律咨询、健康体检等 8 项权益一站查询</p>
+            </div>
+          </div>
+          <div class="about-feat">
+            <div class="about-feat-icon">📊</div>
+            <div class="about-feat-text">
+              <b>数据驾驶舱</b>
+              <p>驿站分布、报修闭环率、区域覆盖度等关键指标可视化</p>
+            </div>
+          </div>
+          <div class="about-feat">
+            <div class="about-feat-icon">📸</div>
+            <div class="about-feat-text">
+              <b>刷脸签到</b>
+              <p>摄像头刷脸进场，无需手写登记，隐私数据全程本地</p>
+            </div>
+          </div>
+          <div class="about-feat">
+            <div class="about-feat-icon">⏰</div>
+            <div class="about-feat-text">
+              <b>物资管理</b>
+              <p>免费物资到期自动提醒，确保站内物品安全可用</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 驿站实拍 -->
+      <div class="about-card">
+        <h2 class="about-h">驿站实拍</h2>
+        <div class="about-photo-feature">
+          <img src="./assets/about/station-front.jpg?v=1" alt="郑州金水区工会驿站外观" width="800" height="600" style="width:100%;height:auto;display:block;" />
+          <p class="about-photo-caption">郑州金水区工会驿站 · 户外劳动者的歇脚港湾</p>
+        </div>
+      </div>
+
+      <div class="about-card">
+        <h2 class="about-h">团队介绍</h2>
+        <p>「驿」路同行项目组由一群关心城市基层劳动者的志愿者发起，我们相信，<b>技术应当为最需要的人服务</b>——让每一份善意都能精确抵达。</p>
+
+        <h3 class="about-sub-h">项目组成员</h3>
+        <ul class="about-members">
+          <li>蔡奇均</li><li>刘江荣</li><li>李泽慧</li>
+          <li>江欣颍</li><li>黄诗涵</li><li>任浩</li>
+          <li>张馨文</li><li>尚子婧</li><li>徐玲萱</li>
+        </ul>
+
+        <h3 class="about-sub-h">指导教练</h3>
+        <p class="about-coach">刘志鑫</p>
+      </div>
+
+      <!-- 调研纪实 -->
+      <div class="about-card">
+        <h2 class="about-h">调研纪实</h2>
+        <div class="about-photo-grid">
+          <figure class="about-photo-item">
+            <img src="./assets/about/team-interview.jpg?v=1" alt="项目组成员采访驿站工作人员" width="800" height="600" style="width:100%;height:auto;display:block;" />
+            <figcaption>项目组成员采访驿站工作人员</figcaption>
+          </figure>
+          <figure class="about-photo-item">
+            <img src="./assets/about/team-outdoor.jpg?v=1" alt="项目组成员在驿站前开展宣传" width="600" height="800" style="width:100%;height:auto;display:block;" />
+            <figcaption>项目组成员在驿站前开展宣传</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="about-card">
+        <h2 class="about-h">联系我们</h2>
+        <div class="about-contact">
+          <div class="about-contact-item">
+            <span class="about-contact-icon">📧</span>
+            <span>邮箱：your-email@example.com</span>
+          </div>
+          <div class="about-contact-item">
+            <span class="about-contact-icon">💬</span>
+            <span>反馈：使用本站「报修」功能提交建议与问题</span>
+          </div>
+          <div class="about-contact-item">
+            <span class="about-contact-icon">🤝</span>
+            <span>合作：欢迎更多工会驿站加入，联系上方邮箱</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="about-foot">「驿」路同行 — 让城市更有温度</p>
+    </section>
+
+  </main>
+
+  <!-- ───────────── 底部导航 ───────────── -->
+  <nav class="bottom-nav" aria-label="主导航">
+    <button class="nav-item is-active" data-tab="map" type="button">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 20l-5.5 1.5V6L9 4.5"/><path d="M9 4.5l6 1.5 5.5-1.5V18L15 19.5 9 18"/><path d="M15 4.5V19.5"/></svg>
+      <span>地图</span>
+    </button>
+    <button class="nav-item" data-tab="repair" type="button">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2-2 2.6-2.6z"/></svg>
+      <span>报修</span>
+    </button>
+    <button class="nav-item" data-tab="benefits" type="button">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L4.2 7.7l5.4-.8z"/></svg>
+      <span>权益</span>
+    </button>
+    <button class="nav-item" data-tab="dash" type="button">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg>
+      <span>驾驶舱</span>
+    </button>
+    <button class="nav-item" data-tab="checkin" type="button" id="nav-face-checkin">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h10l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      <span>签到</span>
+    </button>
+    <button class="nav-item" data-tab="expiry" type="button">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span>到期</span>
+    </button>
+    <button class="nav-item" data-tab="guide" type="button">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      <span>指南</span>
+    </button>
+    <button class="nav-item" data-tab="about" type="button">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <span>关于</span>
+    </button>
+  </nav>
+
+  <!-- ───────────── 详情抽屉 ───────────── -->
+  <aside id="detail-drawer" class="drawer" aria-hidden="true" aria-labelledby="detail-title">
+    <div class="drawer-handle" aria-hidden="true"></div>
+    <button class="drawer-close" id="detail-close" type="button" aria-label="关闭详情">×</button>
+    <div class="drawer-body" id="detail-body">
+      <!-- 由 JS 填充 -->
+    </div>
+  </aside>
+  <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
+
+  <!-- ───────────── 反馈弹窗 ───────────── -->
+  <div id="feedback-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="feedback-title">
+    <div class="modal-card">
+      <h2 id="feedback-title" class="modal-title">反馈与建议</h2>
+      <p class="modal-hint">您的每条反馈都将由项目组整理后递交工会 / 城管部门。</p>
+      <label class="form-label">
+        <span>反馈类型</span>
+        <select id="fb-kind">
+          <option value="suggestion">改进建议</option>
+          <option value="issue">设施问题</option>
+          <option value="praise">表扬</option>
+        </select>
+      </label>
+      <label class="form-label">
+        <span>关联驿站（可选）</span>
+        <select id="fb-station">
+          <option value="">不关联</option>
+        </select>
+      </label>
+      <label class="form-label">
+        <span>联系电话（可选）</span>
+        <input id="fb-contact" type="tel" maxlength="60" placeholder="便于回访" />
+      </label>
+      <label class="form-label">
+        <span>反馈内容 *</span>
+        <textarea id="fb-message" rows="4" maxlength="500" placeholder="请描述具体情况…"></textarea>
+      </label>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="fb-cancel" type="button">取消</button>
+        <button class="btn btn-primary" id="fb-submit" type="button">提交</button>
+      </div>
+      <p id="fb-status" class="form-status" hidden></p>
+    </div>
+  </div>
+
+  <!-- ───────────── 一键报修弹窗 ───────────── -->
+  <div id="report-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="report-title">
+    <div class="modal-card">
+      <h2 id="report-title" class="modal-title">一键报修</h2>
+      <p class="modal-hint">发现驿站设施损坏？一键上报，项目组跟进处理并闭环反馈进度。</p>
+      <label class="form-label">
+        <span>关联驿站</span>
+        <select id="rp-station"><option value="">请选择驿站</option></select>
+      </label>
+      <label class="form-label">
+        <span>报修设施（任选）</span>
+        <div id="rp-facilities" class="chip-pick" role="group" aria-label="报修设施"></div>
+        <input type="hidden" id="rp-facility" value="other" />
+      </label>
+      <label class="form-label">
+        <span>故障描述 *</span>
+        <textarea id="rp-desc" rows="3" maxlength="300" placeholder="如：饮水机不出水、空调不制冷、座椅损坏…"></textarea>
+      </label>
+      <label class="form-label">
+        <span>联系方式（可选）</span>
+        <input id="rp-contact" type="tel" maxlength="60" placeholder="便于回访进度" />
+      </label>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="rp-cancel" type="button">取消</button>
+        <button class="btn btn-primary" id="rp-submit" type="button">提交报修</button>
+      </div>
+      <p id="rp-status" class="form-status" hidden></p>
+    </div>
+  </div>
+
+  <!-- ───────────── 全局提示 ───────────── -->
+  <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
+
+  <!-- 内联驿站数据：<script> 引入，file:// 双击打开也能读取（绕开 fetch 限制） -->
+  <script src="./stations-data.js?v=5"></script>
+  <script src="./app.js?v=10"></script>
+</body>
+</html>

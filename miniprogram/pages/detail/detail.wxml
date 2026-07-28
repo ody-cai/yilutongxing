@@ -1,0 +1,45 @@
+<view class="page" wx:if="{{station}}">
+  <view class="hero card">
+    <view class="hd">
+      <text class="name">{{station.name}}</text>
+      <text class="badge badge-{{station.status}}">{{station.status_label}}</text>
+    </view>
+    <view class="addr">{{station.address}}</view>
+
+    <view class="sec" wx:if="{{station.facility_labels.length}}">
+      <view class="sec-t">提供设施</view>
+      <view class="fac">
+        <text class="fac-item" wx:for="{{station.facility_labels}}" wx:key="key">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card info" wx:if="{{hasMeta}}">
+    <view class="sec-t">驿站信息</view>
+    <view class="grid">
+      <view class="gi" wx:if="{{station.open_hours}}">
+        <text class="k">开放时间</text><text class="v">{{station.open_hours}}</text>
+      </view>
+      <view class="gi" wx:if="{{station.district}}">
+        <text class="k">所属区域</text><text class="v">{{station.district}}</text>
+      </view>
+      <view class="gi" wx:if="{{station.capacity}}">
+        <text class="k">可容纳</text><text class="v">{{station.capacity}} 人</text>
+      </view>
+      <view class="gi" wx:if="{{station.contact_phone}}">
+        <text class="k">联系电话</text><text class="v">{{station.contact_phone}}</text>
+      </view>
+    </view>
+    <view class="desc" wx:if="{{station.description}}">{{station.description}}</view>
+  </view>
+
+  <view class="actions">
+    <view class="btn-primary" bindtap="navigate">{{canUseLocation ? '一键导航' : '复制地址'}}</view>
+    <view class="btn-ghost" bindtap="goFeedback">留言反馈</view>
+  </view>
+
+  <view class="tip" wx:if="{{!canUseLocation}}">当前账号暂不支持唤起地图，点击将复制地址到剪贴板</view>
+  <view class="tip" wx:else>发现驿站异常？随手留言，我们会整理后递交工会 / 城管。</view>
+</view>
+
+<view wx:if="{{loading}}" class="empty">加载中…</view>

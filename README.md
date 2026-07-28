@@ -1,11 +1,13 @@
 # 「驿」路同行 · 街角的清凉 / YiLuTongXing · Cool Corner
 
-> 🏆 全国中学生领导力大赛参赛项目 | National High School Student Leadership Competition Entry
->
-> 🎯 帮扶弱势群体赛道 | Supporting Vulnerable Groups Track
-
+[![荣誉](https://img.shields.io/badge/荣誉-全国中学生领导力大赛%20五星项目-gold.svg)](https://github.com/ody-cai/yilutongxing)
+[![分类](https://img.shields.io/badge/项目分类-帮扶弱势群体-blue.svg)](https://github.com/ody-cai/yilutongxing)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Web%20%7C%20WeChat%20Mini%20Program-green.svg)]()
+
+> 🏆 **全国中学生领导力大赛 · 五星项目**（赛事最高荣誉等级）| National Student Leadership Competition · Five-Star Project (top honor)
+>
+> 🎯 项目分类：帮扶弱势群体 | Category: Supporting Vulnerable Groups
 
 ---
 

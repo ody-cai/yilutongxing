@@ -33,3 +33,6 @@ __pycache__/
 # Build artifacts
 dist/
 build/
+
+# Public assets containing real faces (deployed to Pages but not committed to GitHub)
+ldl-platform/public/assets/about/event-cover.jpg
